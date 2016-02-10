@@ -118,6 +118,15 @@ The libcurl-devel package includes header files and libraries necessary for
 developing programs which use the libcurl library. It contains the API
 documentation of the library, too.
 
+%package -n libcurl-minimal
+Summary: TODO
+Provides: libcurl%{?_isa} = %{version}-%{release}
+Conflicts: libcurl
+RemovePathPostfixes: .minimal
+
+%description -n libcurl-minimal
+TODO
+
 %prep
 %setup -q
 
@@ -142,29 +151,56 @@ printf "1034\n1035\n2046\n2047\n" >> tests/data/DISABLED
 
 %build
 [ -x /usr/kerberos/bin/krb5-config ] && KRB5_PREFIX="=/usr/kerberos"
-%configure --disable-static \
+mkdir build-{full,minimal}
+export common_configure_opts=" \
+    --cache-file=../config.cache \
+    --disable-static \
     --enable-symbol-hiding \
     --enable-ipv6 \
-    --enable-ldaps \
-    --enable-manual \
     --enable-threaded-resolver \
     --with-ca-bundle=%{_sysconfdir}/pki/tls/certs/ca-bundle.crt \
-    --with-gssapi${KRB5_PREFIX} \
-    --with-libidn2 \
-    --with-libmetalink \
-    --with-libpsl \
-    --with-libssh2 \
-    --with-nghttp2 \
-    --without-ssl --with-nss
+    --without-ssl --with-nss"
 #    --enable-debug
 # use ^^^ to turn off optimizations, etc.
 
-# Remove bogus rpath
-sed -i \
-    -e 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' \
-    -e 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
+# configure minimal build
+(
+    cd build-minimal
+    ln -s ../configure
+    %configure $common_configure_opts \
+        --disable-ldap \
+        --disable-ldaps \
+        --disable-manual \
+        --without-gssapi \
+        --without-libidn2 \
+        --without-libmetalink \
+        --without-libpsl \
+        --without-libssh2 \
+        --without-nghttp2
+)
 
-make %{?_smp_mflags} V=1
+# configure full build
+(
+    cd build-full
+    ln -s ../configure
+    %configure $common_configure_opts \
+        --enable-ldap \
+        --enable-ldaps \
+        --with-gssapi${KRB5_PREFIX} \
+        --with-libidn2 \
+        --with-libmetalink \
+        --with-libpsl \
+        --with-libssh2 \
+        --with-nghttp2
+)
+
+# Remove bogus rpath
+sed -i build-{full,minimal}/libtool \
+    -e 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' \
+    -e 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g'
+
+make %{?_smp_mflags} V=1 -C build-minimal
+make %{?_smp_mflags} V=1 -C build-full
 
 %check
 # we have to override LD_LIBRARY_PATH because we eliminated rpath
@@ -172,21 +208,28 @@ LD_LIBRARY_PATH="$RPM_BUILD_ROOT%{_libdir}:$LD_LIBRARY_PATH"
 export LD_LIBRARY_PATH
 
 # compile upstream test-cases
-cd tests
+cd build-full/tests
 make %{?_smp_mflags} V=1
 
 # run the upstream test-suite
-./runtests.pl -a -p -v '!flaky'
+srcdir=../../tests perl -I../../tests ../../tests/runtests.pl -a -p -v '!flaky'
 
 %install
 rm -rf $RPM_BUILD_ROOT
 
-make DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p" install
+# install and rename the library that will be packaged as libcurl-minimal
+make DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p" install -C build-minimal/lib
+rm -f ${RPM_BUILD_ROOT}%{_libdir}/libcurl.{la,so}
+for i in ${RPM_BUILD_ROOT}%{_libdir}/*; do
+    mv -v $i $i.minimal
+done
+
+make DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p" install -C build-full
 
 # install zsh completion for curl
 # (we have to override LD_LIBRARY_PATH because we eliminated rpath)
 LD_LIBRARY_PATH="$RPM_BUILD_ROOT%{_libdir}:$LD_LIBRARY_PATH" \
-    make DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p" install -C scripts
+    make DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p" install -C build-full/scripts
 
 rm -f ${RPM_BUILD_ROOT}%{_libdir}/libcurl.la
 
@@ -215,7 +258,8 @@ rm -rf $RPM_BUILD_ROOT
 %files -n libcurl
 %{!?_licensedir:%global license %%doc}
 %license COPYING
-%{_libdir}/libcurl.so.*
+%{_libdir}/libcurl.so.[0-9]
+%{_libdir}/libcurl.so.[0-9].[0-9].[0-9]
 
 %files -n libcurl-devel
 %doc docs/examples/*.c docs/examples/Makefile.example docs/INTERNALS.md
@@ -227,6 +271,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/curl-config.1*
 %{_mandir}/man3/*
 %{_datadir}/aclocal/libcurl.m4
+
+%files -n libcurl-minimal
+%{!?_licensedir:%global license %%doc}
+%license COPYING
+%{_libdir}/libcurl.so.[0-9].minimal
+%{_libdir}/libcurl.so.[0-9].[0-9].[0-9].minimal
 
 %changelog
 * Mon Mar 06 2017 Kamil Dudka <kdudka@redhat.com> 7.53.1-3
