@@ -118,6 +118,15 @@ The libcurl-devel package includes header files and libraries necessary for
 developing programs which use the libcurl library. It contains the API
 documentation of the library, too.
 
+%package -n curl-minimal
+Summary: TODO
+Provides: curl = %{version}-%{release}
+Conflicts: curl
+RemovePathPostfixes: .minimal
+
+%description -n curl-minimal
+TODO
+
 %package -n libcurl-minimal
 Summary: TODO
 Provides: libcurl%{?_isa} = %{version}-%{release}
@@ -224,6 +233,10 @@ for i in ${RPM_BUILD_ROOT}%{_libdir}/*; do
     mv -v $i $i.minimal
 done
 
+# install and rename the executable that will be packaged as curl-minimal
+make DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p" install -C build-minimal/src
+mv -v ${RPM_BUILD_ROOT}%{_bindir}/curl{,.minimal}
+
 make DESTDIR=$RPM_BUILD_ROOT INSTALL="install -p" install -C build-full
 
 # install zsh completion for curl
@@ -271,6 +284,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/curl-config.1*
 %{_mandir}/man3/*
 %{_datadir}/aclocal/libcurl.m4
+
+%files -n curl-minimal
+%{_bindir}/curl.minimal
+%{_mandir}/man1/curl.1*
 
 %files -n libcurl-minimal
 %{!?_licensedir:%global license %%doc}
