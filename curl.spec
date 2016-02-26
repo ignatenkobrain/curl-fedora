@@ -119,22 +119,28 @@ developing programs which use the libcurl library. It contains the API
 documentation of the library, too.
 
 %package -n curl-minimal
-Summary: TODO
+Summary: Conservatively configured build of curl for minimal installations.
 Provides: curl = %{version}-%{release}
 Conflicts: curl
 RemovePathPostfixes: .minimal
 
 %description -n curl-minimal
-TODO
+This is a replacement of the 'curl' package for minimal installations.  It
+comes with a limited set of features compared to the 'curl' package.  On the
+other hand, the package is smaller and requires fewer run-time dependencies to
+be installed.
 
 %package -n libcurl-minimal
-Summary: TODO
+Summary: Conservatively configured build of libcurl for minimal installations.
 Provides: libcurl%{?_isa} = %{version}-%{release}
 Conflicts: libcurl
 RemovePathPostfixes: .minimal
 
 %description -n libcurl-minimal
-TODO
+This is a replacement of the 'libcurl' package for minimal installations.  It
+comes with a limited set of features compared to the 'libcurl' package.  On the
+other hand, the package is smaller and requires fewer run-time dependencies to
+be installed.
 
 %prep
 %setup -q
