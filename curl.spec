@@ -174,6 +174,7 @@ export common_configure_opts=" \
     --enable-ipv6 \
     --enable-threaded-resolver \
     --with-ca-bundle=%{_sysconfdir}/pki/tls/certs/ca-bundle.crt \
+    --with-gssapi${KRB5_PREFIX} \
     --without-ssl --with-nss"
 #    --enable-debug
 # use ^^^ to turn off optimizations, etc.
@@ -186,7 +187,6 @@ export common_configure_opts=" \
         --disable-ldap \
         --disable-ldaps \
         --disable-manual \
-        --without-gssapi \
         --without-libidn2 \
         --without-libmetalink \
         --without-libpsl \
@@ -201,7 +201,6 @@ export common_configure_opts=" \
     %configure $common_configure_opts \
         --enable-ldap \
         --enable-ldaps \
-        --with-gssapi${KRB5_PREFIX} \
         --with-libidn2 \
         --with-libmetalink \
         --with-libpsl \
